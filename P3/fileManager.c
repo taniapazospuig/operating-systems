@@ -27,12 +27,12 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
         fm->fdCRC[i] = open(path, O_RDONLY); // storing file descriptor of crc file to struct
 
         fm->fileFinished[i] = 0; // file not completely read
-        fm->fileAvailable[i] = 1; // file being read by a thread
+        fm->fileAvailable[i] = 1; // file is available
         my_sem_signal(&semaphore);
     }
 }
 
-void  destroyFdProvider(FileManager * fm) {
+void  destroyFdProvider(FileManager * fm) { // frees all alocated memory and closes open files
     int i;
     for (i = 0; i < fm->nFilesTotal; i++) {
         close(fm->fdData[i]);
@@ -42,32 +42,43 @@ void  destroyFdProvider(FileManager * fm) {
     free(fm->fdCRC);
     free(fm->fileFinished);
 }
+
 int getAndReserveFile(FileManager *fm, dataEntry * d) {
     // This function needs to be implemented by the students
+    // fileAvailable 1 and fileFinished 0
+    // return information (fds crc and data, index of filemanager struct) in struct dataEntry
+    // mark file as not available (fileAvailable1)
+    my_semaphore semaphore;
+    my_sem_init(&semaphore, 1);
     int i;
     for (i = 0; i < fm->nFilesTotal; ++i) {
+        
+        my_sem_wait(&semaphore);
         if (fm->fileAvailable[i] && !fm->fileFinished[i]) {
             d->fdcrc = fm->fdCRC[i];
             d->fddata = fm->fdData[i];
             d->index = i;
 
             // You should mark that the file is not available 
-            ??
-
+            fm->fileAvailable[i] = 0;
+            my_sem_signal(&semaphore);
             return 0;
         }
+        my_sem_signal(&semaphore);
     }             
-    return 1;
+    return 1; // if no file available, return 1
 }
-void unreserveFile(FileManager *fm,dataEntry * d) {
+
+void unreserveFile(FileManager *fm,dataEntry * d) { // call when thread finishes reading the block in the specified file
     fm->fileAvailable[d->index] = 1; 
 }
 
-void markFileAsFinished(FileManager * fm, dataEntry * d) {
+void markFileAsFinished(FileManager * fm, dataEntry * d) { // call when file completely read 
     fm->fileFinished[d->index] = 1;
     fm->nFilesRemaining--; //mark that a file has finished
     if (fm->nFilesRemaining == 0) {
         printf("All files have been processed\n");
         //TO COMPLETE: unblock all waiting threads, if needed
+
     }
 }
