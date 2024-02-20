@@ -20,7 +20,7 @@ int get_file_size(char* fname);
 
 int read_split( int fin, char* buff, int maxlen, char* ch_end );
 
-// Semaphores implementation Using pthreads monitors
+// Semaphores implementation using pthreads monitors
 typedef struct semaphore_struct {
 	int i;
 	pthread_mutex_t lock;

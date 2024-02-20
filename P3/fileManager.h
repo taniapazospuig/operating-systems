@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <semaphore.h>
 
 typedef struct {
     int fdcrc;
@@ -9,9 +10,6 @@ typedef struct {
     int index;
     char * filename;
 } dataEntry;
-
-
-pthread_mutex_t lock;
 
 typedef struct {
     int * fdData;
@@ -22,6 +20,10 @@ typedef struct {
     int nFilesRemaining;
     int nFilesTotal;
 } FileManager;
+
+// Synchronization tools as global variables
+pthread_mutex_t lock;
+sem_t semaphore;
 
 void initialiseFdProvider(FileManager * fm, int argc, char **argv);
 void destroyFdProvider(FileManager * fm);

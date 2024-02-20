@@ -1,13 +1,11 @@
 #include "fileManager.h"
 #include "myutils.h"
-//since myutils.h already includes pthread.h and semaphore.h we do not include them again
+
+// since myutils.h already includes pthread.h we do not include them again
 
 void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     // Complete the initialisation
     /* Your rest of the initialisation comes here*/
-    my_semaphore semaphore;
-    my_sem_init(&semaphore, 1); // critical section can only be executed by one thread at a time
-
     fm->nFilesTotal = argc -1;
     fm->nFilesRemaining = fm->nFilesTotal;
     // Initialise enough memory to  store the arrays
@@ -16,11 +14,12 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     fm->fileFinished = malloc(sizeof(int) * fm->nFilesTotal);
     fm->fileAvailable = malloc(sizeof(int) * fm->nFilesTotal);
 
+    // Initialize synchronization tools
+    my_sem_init(&semaphore, fm->nFilesTotal); // Semaphore to ensure threads executing concurrently
+    pthread_mutex_init(&lock, NULL); // Lock to ensure only one thread is reading from the same file
+
     int i;
     for (i = 1; i < fm->nFilesTotal +1; ++i) {
-        // This is the critical section, as 2 threads might get the same index and thus try to store the file descriptors of the two files in the same
-        // position of the arrays of the fm struct
-        my_sem_wait(&semaphore);
         char path[100];
         strcpy(path, argv[i]);
         strcat(path, ".crc");
@@ -29,12 +28,10 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
 
         fm->fileFinished[i] = 0; // file not completely read
         fm->fileAvailable[i] = 1; // file is available
-        
-        my_sem_signal(&semaphore);
     }
 }
 
-void  destroyFdProvider(FileManager * fm) { // frees all alocated memory and closes open files
+void destroyFdProvider(FileManager * fm) { // frees all alocated memory and closes open files
     int i;
     for (i = 0; i < fm->nFilesTotal; i++) {
         close(fm->fdData[i]);
@@ -47,29 +44,26 @@ void  destroyFdProvider(FileManager * fm) { // frees all alocated memory and clo
 
 int getAndReserveFile(FileManager *fm, dataEntry * d) {
     // This function needs to be implemented by the students
-    // fileAvailable 1 and fileFinished 0
     // return information (fds crc and data, index of filemanager struct) in struct dataEntry
-    // mark file as not available (fileAvailable1)
-    // we have to add locks!!!
-    my_semaphore semaphore;
-    my_sem_init(&semaphore, 1);
+    // mark file as not available (fileAvailable 0)
+
     int i;
     for (i = 0; i < fm->nFilesTotal; ++i) {
         
-        my_sem_wait(&semaphore);
         if (fm->fileAvailable[i] && !fm->fileFinished[i]) {
-            // lock here 
+
+            pthread_mutex_lock(&lock); // lock to make sure only one thread is executing this section
+            fm->fileAvailable[i] = 0; // mark that the file is not available 
+
             d->fdcrc = fm->fdCRC[i];
             d->fddata = fm->fdData[i];
             d->index = i;
+            pthread_mutex_unlock(&lock);
 
-            // You should mark that the file is not available 
-            fm->fileAvailable[i] = 0;
-            my_sem_signal(&semaphore);
             return 0;
         }
-        my_sem_signal(&semaphore);
-    }             
+    }
+
     return 1; // if no file available, return 1
 }
 
@@ -79,7 +73,7 @@ void unreserveFile(FileManager *fm,dataEntry * d) { // call when thread finishes
 
 void markFileAsFinished(FileManager * fm, dataEntry * d) { // call when file completely read 
     fm->fileFinished[d->index] = 1;
-    fm->nFilesRemaining--; //mark that a file has finished
+    fm->nFilesRemaining--; // mark that a file has finished
     if (fm->nFilesRemaining == 0) {
         printf("All files have been processed\n");
         //TO COMPLETE: unblock all waiting threads, if needed
