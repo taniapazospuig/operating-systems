@@ -1,5 +1,6 @@
 #include "fileManager.h"
 #include "myutils.h"
+//since myutils.h already includes pthread.h and semaphore.h we do not include them again
 
 void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     // Complete the initialisation
@@ -28,6 +29,7 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
 
         fm->fileFinished[i] = 0; // file not completely read
         fm->fileAvailable[i] = 1; // file is available
+        
         my_sem_signal(&semaphore);
     }
 }
@@ -48,6 +50,7 @@ int getAndReserveFile(FileManager *fm, dataEntry * d) {
     // fileAvailable 1 and fileFinished 0
     // return information (fds crc and data, index of filemanager struct) in struct dataEntry
     // mark file as not available (fileAvailable1)
+    // we have to add locks!!!
     my_semaphore semaphore;
     my_sem_init(&semaphore, 1);
     int i;
@@ -55,6 +58,7 @@ int getAndReserveFile(FileManager *fm, dataEntry * d) {
         
         my_sem_wait(&semaphore);
         if (fm->fileAvailable[i] && !fm->fileFinished[i]) {
+            // lock here 
             d->fdcrc = fm->fdCRC[i];
             d->fddata = fm->fdData[i];
             d->index = i;
@@ -79,6 +83,8 @@ void markFileAsFinished(FileManager * fm, dataEntry * d) { // call when file com
     if (fm->nFilesRemaining == 0) {
         printf("All files have been processed\n");
         //TO COMPLETE: unblock all waiting threads, if needed
+        // signal for all waitinig threads 
+        // unlock mutex
 
     }
 }

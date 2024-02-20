@@ -86,7 +86,7 @@ int file_unlock(int fd, int start, off_t len)
 }
 
 
-void mon_lock_init(monitor_lock* ml) {
+/*void mon_lock_init(monitor_lock* ml) {
   ml->bInUse=false;
   pthread_mutex_init(&ml->lock, NULL);
   pthread_cond_init(&ml->cond_free, NULL);
@@ -107,4 +107,4 @@ void mon_unlock(monitor_lock* ml) {
   ml->bInUse = false;
   pthread_cond_signal(&ml->cond_free);
   pthread_mutex_unlock(&ml->lock);
-}
+}*/

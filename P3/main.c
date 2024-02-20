@@ -13,6 +13,9 @@ FileManager fm;
 
 void* worker_function(void * arg){
     while (1){
+        // case 1: more to read, so continue reading 
+        // case 2: nothing more to read so mark file as finished
+        // case 3: unreserve for the file and do the computation
         dataEntry  d;
         char * buff[256];
         short int crc;
