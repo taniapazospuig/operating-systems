@@ -35,7 +35,7 @@ void* worker_function(void * arg){
             } 
             else{
                 if (crc != crcSlow(buff, nBytesReadData)) { // compute the crc and compare it to the read crc
-                    printf("CRC error in file %d\n", d.filename);
+                    printf("CRC error in file %s\n", d.filename);
                 }
                 unreserveFile(&fm, &d); 
             }
