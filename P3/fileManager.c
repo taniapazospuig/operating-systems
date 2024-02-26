@@ -7,7 +7,6 @@
 void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     // Complete the initialisation
     /* Your rest of the initialisation comes here*/
-    int maxStringLength = 50;
     fm->nFilesTotal = argc -1;
     fm->nFilesRemaining = fm->nFilesTotal;
     // Initialise enough memory to  store the arrays
@@ -15,7 +14,10 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     fm->fdCRC= malloc(sizeof(int) * fm->nFilesTotal);
     fm->fileFinished = malloc(sizeof(int) * fm->nFilesTotal);
     fm->fileAvailable = malloc(sizeof(int) * fm->nFilesTotal);
-    fm->filename = malloc(sizeof(char*) * fm->nFilesTotal);
+    /*fm->filename = malloc(sizeof(char*) * fm->nFilesTotal);
+    for (int i = 0; i < fm->nFilesTotal; i++) {
+        fm->filename[i] = strdup(argv[i+1]);
+    }*/ // print filename version
 
 
     // Initialize synchronization tools
@@ -29,7 +31,6 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
         strcat(path, ".crc");
         fm->fdData[i] = open(argv[i], O_RDONLY); // storing file descriptor of data file to struct
         fm->fdCRC[i] = open(path, O_RDONLY); // storing file descriptor of crc file to struct
-        strcpy(fm->filename[i], argv[i+1]); 
 
         fm->fileFinished[i] = 0; // file not completely read
         fm->fileAvailable[i] = 1; // file is available
@@ -62,7 +63,7 @@ int getAndReserveFile(FileManager *fm, dataEntry * d) {
             d->fdcrc = fm->fdCRC[i];
             d->fddata = fm->fdData[i];
             d->index = i;
-            strcpy(d->filename, fm->filename[i]);
+            //strcpy(d->filename, fm->filename[i]);
 
             pthread_mutex_unlock(&lock); 
 

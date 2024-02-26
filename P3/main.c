@@ -15,8 +15,8 @@ void* worker_function(void * arg){
         // case 2: nothing more to read so mark file as finished
         // case 3: unreserve for the file and do the computation
         dataEntry  d;
+        crc crcValue;
         unsigned char buff[256];
-        crc crc;
 
         //place semaphore to manage the number of threads accessing the function concurrently
         sem_wait(&semaphore); 
@@ -24,19 +24,24 @@ void* worker_function(void * arg){
         sem_post(&semaphore); 
 
         // Case 1
-        if (res == 0) {
-            read(d.fdcrc, &crc, sizeof(short int)); // read crc file and put the value in variable crc
-            int nBytesReadData = read(d.fddata, buff, 256); // read a block of data file and put it in the buffer
+        if (res == 0) { 
+            read(d.fdcrc, &crcValue, sizeof(crc)); // read crc file and put the value in variable crc
+            int nBytesReadData = read(d.fddata, &buff, 256); // read a block of data file and put it in the buffer
 
             if(nBytesReadData == 0){ // there is no more data to read in this file
                 unreserveFile(&fm, &d); 
                 markFileAsFinished(&fm, &d); 
                 
             } 
-            else{
-                if (crc != crcSlow(buff, nBytesReadData)) { // compute the crc and compare it to the read crc
-                    printf("CRC error in file %s\n", d.filename);
+            else {
+                printf("crcvalue %d\n", crcValue); 
+                crc crcComputed = crcSlow((unsigned char*)buff, nBytesReadData);
+                printf("crcSlow %d\n", crcComputed); 
+
+                if (crcValue != crcComputed) { // compute the crc and compare it to the read crc
+                    printf("CRC error in file %d\n", d.index);
                 }
+                
                 unreserveFile(&fm, &d); 
             }
             
