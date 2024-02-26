@@ -16,17 +16,17 @@ void* worker_function(void * arg){
         // case 3: unreserve for the file and do the computation
         dataEntry  d;
         crc crcValue;
-        unsigned char buff[256];
+        char buff[256];
 
         //place semaphore to manage the number of threads accessing the function concurrently
         sem_wait(&semaphore); 
         int res = getAndReserveFile(&fm, &d); // Reserves a file 
-        sem_post(&semaphore); 
+         
 
         // Case 1
         if (res == 0) { 
             read(d.fdcrc, &crcValue, sizeof(crc)); // read crc file and put the value in variable crc
-            int nBytesReadData = read(d.fddata, &buff, 256); // read a block of data file and put it in the buffer
+            int nBytesReadData = read(d.fddata, buff, 256); // read a block of data file and put it in the buffer
 
             if(nBytesReadData == 0){ // there is no more data to read in this file
                 unreserveFile(&fm, &d); 
@@ -35,7 +35,7 @@ void* worker_function(void * arg){
             } 
             else {
                 printf("crcvalue %d\n", crcValue); 
-                crc crcComputed = crcSlow((unsigned char*)buff, nBytesReadData);
+                crc crcComputed = crcSlow(buff, nBytesReadData);
                 printf("crcSlow %d\n", crcComputed); 
 
                 if (crcValue != crcComputed) { // compute the crc and compare it to the read crc
@@ -44,9 +44,8 @@ void* worker_function(void * arg){
                 
                 unreserveFile(&fm, &d); 
             }
-            
         }
-        
+
         // Case 2
         if (res == 1 && fm.nFilesRemaining > 0){ // no files available and not all files finished
            pthread_join(*(pthread_t *)arg, NULL); // we make the thread wait for a signal 
@@ -55,6 +54,8 @@ void* worker_function(void * arg){
         if (res == 1 && fm.nFilesRemaining == 0){
             pthread_exit(NULL); //all files are finished
         }
+
+        sem_post(&semaphore);
     }
 }
 
