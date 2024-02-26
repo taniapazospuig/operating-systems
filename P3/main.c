@@ -15,8 +15,8 @@ void* worker_function(void * arg){
         // case 2: nothing more to read so mark file as finished
         // case 3: unreserve for the file and do the computation
         dataEntry  d;
-        char * buff[256];
-        short int crc;
+        unsigned char buff[256];
+        crc crc;
 
         //place semaphore to manage the number of threads accessing the function concurrently
         sem_wait(&semaphore); 
@@ -35,7 +35,7 @@ void* worker_function(void * arg){
             } 
             else{
                 if (crc != crcSlow(buff, nBytesReadData)) { // compute the crc and compare it to the read crc
-                    printf("CRC error in file %s\n", d.filename);
+                    printf("CRC error in file %d\n", d.filename);
                 }
                 unreserveFile(&fm, &d); 
             }

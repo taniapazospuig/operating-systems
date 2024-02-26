@@ -1,5 +1,6 @@
 #include "fileManager.h"
 #include "myutils.h"
+#include <string.h>
 
 // since myutils.h already includes pthread.h we do not include them again
 
@@ -19,7 +20,7 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     pthread_mutex_init(&lock, NULL); // Lock to ensure only one thread is reading from the same file
 
     int i;
-    for (i = 0; i < fm->nFilesTotal +1; ++i) {
+    for (i = 0; i < fm->nFilesTotal; ++i) {
         char path[100];
         strcpy(path, argv[i + 1]);
         strcat(path, ".crc");
@@ -57,6 +58,7 @@ int getAndReserveFile(FileManager *fm, dataEntry * d) {
             d->fdcrc = fm->fdCRC[i];
             d->fddata = fm->fdData[i];
             d->index = i;
+            strcpy(d->filename, i);
 
             pthread_mutex_unlock(&lock); 
 
