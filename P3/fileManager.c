@@ -25,7 +25,7 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
         char path[100];
         strcpy(path, argv[i + 1]);
         strcat(path, ".crc");
-        fm->fdData[i] = open(argv[i], O_RDONLY); // storing file descriptor of data file to struct
+        fm->fdData[i] = open(argv[i+1], O_RDONLY); // storing file descriptor of data file to struct
         fm->fdCRC[i] = open(path, O_RDONLY); // storing file descriptor of crc file to struct
         fm->filenames[i] = argv[i+1]; 
         fm->fileFinished[i] = 0; // file not completely read

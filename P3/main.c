@@ -21,7 +21,6 @@ void* worker_function(void * arg){
         //place semaphore to manage the number of threads accessing the function concurrently
         sem_wait(&semaphore); 
         int res = getAndReserveFile(&fm, &d); // Reserves a file 
-         
 
         // Case 1
         if (res == 0) { 
@@ -34,11 +33,7 @@ void* worker_function(void * arg){
                 
             } 
             else {
-                printf("crcvalue %d\n", crcValue); 
-                crc crcComputed = crcSlow(buff, nBytesReadData);
-                printf("crcSlow %d\n", crcComputed); 
-
-                if (crcValue != crcComputed) { // compute the crc and compare it to the read crc
+                if (crcValue != crcSlow(buff, nBytesReadData)) { // compute the crc and compare it to the read crc
                     printf("CRC error in file %s\n", d.filename);
                 }
                 
