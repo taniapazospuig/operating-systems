@@ -15,13 +15,13 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     fm->fileAvailable = malloc(sizeof(int) * fm->nFilesTotal);
 
     // Initialize synchronization tools
-    my_sem_init(&semaphore, fm->nFilesTotal); // Semaphore to ensure threads executing concurrently
+    sem_init(&semaphore, 0, fm->nFilesTotal); // Semaphore to ensure threads executing concurrently
     pthread_mutex_init(&lock, NULL); // Lock to ensure only one thread is reading from the same file
 
     int i;
-    for (i = 1; i < fm->nFilesTotal +1; ++i) {
+    for (i = 0; i < fm->nFilesTotal +1; ++i) {
         char path[100];
-        strcpy(path, argv[i]);
+        strcpy(path, argv[i + 1]);
         strcat(path, ".crc");
         fm->fdData[i] = open(argv[i], O_RDONLY); // storing file descriptor of data file to struct
         fm->fdCRC[i] = open(path, O_RDONLY); // storing file descriptor of crc file to struct
@@ -49,19 +49,20 @@ int getAndReserveFile(FileManager *fm, dataEntry * d) {
 
     int i;
     for (i = 0; i < fm->nFilesTotal; ++i) {
-        
+        pthread_mutex_lock(&lock); // lock to make sure only one thread is executing this section with the same index
+
         if (fm->fileAvailable[i] && !fm->fileFinished[i]) {
-
-            pthread_mutex_lock(&lock); // lock to make sure only one thread is executing this section
+    
             fm->fileAvailable[i] = 0; // mark that the file is not available 
-
             d->fdcrc = fm->fdCRC[i];
             d->fddata = fm->fdData[i];
             d->index = i;
-            pthread_mutex_unlock(&lock);
 
+            pthread_mutex_unlock(&lock); 
+            
             return 0;
         }
+        pthread_mutex_unlock(&lock); 
     }
 
     return 1; // if no file available, return 1
