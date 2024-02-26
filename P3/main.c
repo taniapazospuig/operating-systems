@@ -55,6 +55,8 @@ void* worker_function(void * arg){
 }
 
 int main(int argc, char ** argv) {
+    float totalTime = 0;
+    startTimer(0);
     initialiseFdProvider(&fm, argc, argv);
     pthread_t threadID[fm.nFilesTotal]; // create one thread per file
     for (int i = 0; i < fm.nFilesTotal; ++i) { 
@@ -68,6 +70,8 @@ int main(int argc, char ** argv) {
     }
 
     destroyFdProvider(&fm);
-    sem_destroy(&semaphore); 
+    sem_destroy(&semaphore);
+    totalTime += endTimer(0);
+    printf("Total time of execution: %f\n", totalTime);
     return 0; 
 }
