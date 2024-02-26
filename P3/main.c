@@ -65,5 +65,8 @@ int main(int argc, char ** argv) {
     for (int i = 0; i < fm.nFilesTotal; ++i) { // wait until all threads have finished
         pthread_join(threadID[i], NULL);
     }
+
     destroyFdProvider(&fm);
+    sem_destroy(&semaphore); 
+    return 0; 
 }

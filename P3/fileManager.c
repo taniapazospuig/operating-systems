@@ -59,7 +59,7 @@ int getAndReserveFile(FileManager *fm, dataEntry * d) {
             d->index = i;
 
             pthread_mutex_unlock(&lock); 
-            
+
             return 0;
         }
         pthread_mutex_unlock(&lock); 
@@ -73,13 +73,16 @@ void unreserveFile(FileManager *fm,dataEntry * d) { // call when thread finishes
 }
 
 void markFileAsFinished(FileManager * fm, dataEntry * d) { // call when file completely read 
+    pthread_mutex_lock(&lock); // we put a lock to avoid several threads uptading files remaining
+
     fm->fileFinished[d->index] = 1;
     fm->nFilesRemaining--; // mark that a file has finished
+
     if (fm->nFilesRemaining == 0) {
         printf("All files have been processed\n");
-        //TO COMPLETE: unblock all waiting threads, if needed
-        // signal for all waitinig threads 
-        // unlock mutex
-
+        
     }
+
+    pthread_mutex_unlock(&lock); 
+    // this lock and unlock signals to all the possible waiting threads that all files are finished
 }
