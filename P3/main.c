@@ -39,7 +39,7 @@ void* worker_function(void * arg){
                 printf("crcSlow %d\n", crcComputed); 
 
                 if (crcValue != crcComputed) { // compute the crc and compare it to the read crc
-                    printf("CRC error in file %d\n", d.index);
+                    printf("CRC error in file %s\n", d.filename);
                 }
                 
                 unreserveFile(&fm, &d); 

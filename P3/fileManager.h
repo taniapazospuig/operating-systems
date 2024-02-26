@@ -16,7 +16,7 @@ typedef struct {
     int * fdCRC;
     int * fileFinished;
     int * fileAvailable;
-    char ** filename;
+    char ** filenames;
 
     int nFilesRemaining;
     int nFilesTotal;

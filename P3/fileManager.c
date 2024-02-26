@@ -14,12 +14,8 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     fm->fdCRC= malloc(sizeof(int) * fm->nFilesTotal);
     fm->fileFinished = malloc(sizeof(int) * fm->nFilesTotal);
     fm->fileAvailable = malloc(sizeof(int) * fm->nFilesTotal);
-    /*fm->filename = malloc(sizeof(char*) * fm->nFilesTotal);
-    for (int i = 0; i < fm->nFilesTotal; i++) {
-        fm->filename[i] = strdup(argv[i+1]);
-    }*/ // print filename version
-
-
+    fm->filenames = malloc(sizeof(char*) * fm->nFilesTotal);
+    
     // Initialize synchronization tools
     sem_init(&semaphore, 0, fm->nFilesTotal); // Semaphore to ensure threads executing concurrently
     pthread_mutex_init(&lock, NULL); // Lock to ensure only one thread is reading from the same file
@@ -31,7 +27,7 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
         strcat(path, ".crc");
         fm->fdData[i] = open(argv[i], O_RDONLY); // storing file descriptor of data file to struct
         fm->fdCRC[i] = open(path, O_RDONLY); // storing file descriptor of crc file to struct
-
+        fm->filenames[i] = argv[i+1]; 
         fm->fileFinished[i] = 0; // file not completely read
         fm->fileAvailable[i] = 1; // file is available
     }
@@ -58,13 +54,12 @@ int getAndReserveFile(FileManager *fm, dataEntry * d) {
         pthread_mutex_lock(&lock); // lock to make sure only one thread is executing this section with the same index
 
         if (fm->fileAvailable[i] && !fm->fileFinished[i]) {
-    
-            fm->fileAvailable[i] = 0; // mark that the file is not available 
+
             d->fdcrc = fm->fdCRC[i];
             d->fddata = fm->fdData[i];
             d->index = i;
-            //strcpy(d->filename, fm->filename[i]);
-
+            d->filename = fm->filenames[i];
+            fm->fileAvailable[i] = 0; // mark that the file is not available 
             pthread_mutex_unlock(&lock); 
 
             return 0;
