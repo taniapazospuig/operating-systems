@@ -12,7 +12,7 @@
 
 typedef struct {
     int nBlock;
-    int isGet;
+    int isGet; //if get 1, if generate 0
 } Request;
 
 typedef struct {
@@ -27,36 +27,79 @@ int main(int argc, char * argv[]) {
     // pipe A --> communication from parent to child
     // Create two pipes. Also remember to close the channels when needed, otherwise it will not work!
 
+    if(pipe(pipeA) == -1){
+        printf("Pipe creation failed\n"); 
+        exit(1); 
+    }
+
+    if(pipe(pipeB) == -1){
+        printf("Pipe creation failed\n"); 
+        exit(1); 
+    }
+
     for (int i = 0; i < N; ++i) { //we create 4 child processes --> each of the filds has 2 file descriptors
         int n = fork();
-        if (n == 0) {
-            int fd = open(argv[1], O_RDONLY);
-            int fdCRC =open(argv[2], O_RDWR);
+        if (n == -1){
+            printf("An error ocurred with the fork\n"); 
+            exit(1); 
+        }
+        if (n == 0) { //piece of code run by the child process
+            //children will read from pipeA and write to pipeB
+            close(pipeA[1]);  //close write for pipe A
+            close(pipeB[0]);  //close read for pipe B
+            
+            int fd = open(argv[1], O_RDONLY); //open data file read only
+            int fdCRC = open(argv[2], O_RDWR); //open crc file read and write
             Request r; // from the standard input --> either generate or get
-            while( /* Read a request from the pipe */) {
-                if (!r.isGet) {
-
+            // we create an instance of r
+            while(read(pipeA[0], &r, sizeof(Request)) >0) { //while there are requests to read
+                if (!r.isGet) { //generate
+                    lseek(fd, (r.nBlock*256), SEEK_SET); //to move the reading pointer to read the block
+                    char buff[256]; 
+                    int nBytesRead = read(fd, (unsigned char*)buff, 256); 
+                    if(nBytesRead > 0){
+                        crc crcValue = crcSlow( (unsigned char*)buff, nBytesRead); 
+                        file_lock_write(fdCRC, r.nBlock*sizeof(short int), sizeof(short int)); //we put a lock to write the recomputed crc value in the CRC file
+                        lseek(fdCRC, r.nBlock*sizeof(short int), SEEK_SET); //move pointer to write 
+                        write(fdCRC, &crcValue, sizeof(short int)); 
+                        file_unlock(fdCRC, r.nBlock*sizeof(short int), sizeof(short int)); 
+                    }
                     /* Recompute the CRC, use lseek to get the correct datablock,
                     and store it in the correct position of the CRC file. Remember to use approppriate locks! */
                     usleep(rand()%1000 *1000); // Make the computation a bit slower
 
                 }
-                else{
+                else{ //get
                     usleep(rand()%1000 *1000);
-                    Result res;
+                    Result res; 
                     res.nBlock = r.nBlock;
                     // Read the CRC from the CRC file, using lseek + read. Remember to use the correct locks!
+                    file_lock_read(fdCRC, r.nBlock*sizeof(short int), sizeof(short int)); 
+                    lseek(fdCRC, r.nBlock*sizeof(short int), SEEK_SET); 
+                    int nBytesReadCRC = read(fdCRC, &res.crc, sizeof(short int)); 
+                    file_unlock(fdCRC, r.nBlock*sizeof(short int), sizeof(short int)); 
+                    if(nBytesReadCRC > 0){
+                        write(pipeB[1], &res, sizeof(Result)); 
+                    }
 
                     //Write the result in pipeB!
                 }
             }
-
+            close(pipeA[0]); //close read pipe A 
+            close(pipeB[1]); //close write pipe B
+            close(fd); 
+            close(fdCRC); 
             exit(0);
         }
     }
+
+    //parent will only write to pipe A and read from pipe B
+    close(pipeA[0]); //close read pipe A 
+    close(pipeB[1]); //close write pipe B
+
     char s[100];
     int nBytesRead;
-    /* Read until the standard output*/
+    /* Read from the standard input*/
     while((nBytesRead = read(0, s, 100) ) > 0) {
         char op[200];
         s[nBytesRead] = '\0';
@@ -67,8 +110,9 @@ int main(int argc, char * argv[]) {
         r.nBlock = nBlock;
         r.isGet = strcmp(op, "get") == 0;
         // Write r in the pipe!
+        write(pipeA[1], &r, sizeof(Request)); 
     }
-
+    close(pipeA[1]);
     printf("FINISHED\n");
     while(wait(NULL) == -1);
 
@@ -77,4 +121,7 @@ int main(int argc, char * argv[]) {
     while((nBytesRead = read(pipeB[0], &res, sizeof(res)) ) > 0) {
         printf("The CRC of block #%d is %d \n", res.nBlock, res.crc);
     }
+
+     
+    close(pipeB[0]);  
 }
