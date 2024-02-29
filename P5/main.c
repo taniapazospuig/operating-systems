@@ -54,7 +54,7 @@ int main(int argc, char * argv[]) {
             // we create an instance of r
             while(read(pipeA[0], &r, sizeof(Request)) >0) { //while there are requests to read
                 if (!r.isGet) { //generate
-                    lseek(fd, (r.nBlock*256), SEEK_SET); //to move the reading pointer to read the block
+                    lseek(fd, r.nBlock*256, SEEK_SET); //to move the reading pointer to read the block
                     char buff[256]; 
                     int nBytesRead = read(fd, (unsigned char*)buff, 256); 
                     if(nBytesRead > 0){
