@@ -17,7 +17,7 @@ typedef struct {
 
 typedef struct {
     int nBlock;
-    short int crc;
+    unsigned short int crc;
 } Result;
 
 //put error handling messages!!!
@@ -50,19 +50,23 @@ int main(int argc, char * argv[]) {
             
             int fd = open(argv[1], O_RDONLY); //open data file read only
             int fdCRC = open(argv[2], O_RDWR); //open crc file read and write
+            //crcInit(); 
             Request r; // from the standard input --> either generate or get
             // we create an instance of r
             while(read(pipeA[0], &r, sizeof(Request)) >0) { //while there are requests to read
                 if (!r.isGet) { //generate
-                    lseek(fd, r.nBlock*256, SEEK_SET); //to move the reading pointer to read the block
+                    off_t offset_data = (r.nBlock -1)*256; 
+                    lseek(fd, offset_data, SEEK_SET); //to move the reading pointer to read the block
                     char buff[256]; 
                     int nBytesRead = read(fd, (unsigned char*)buff, 256); 
                     if(nBytesRead > 0){
-                        crc crcValue = crcSlow( (unsigned char*)buff, nBytesRead); 
-                        file_lock_write(fdCRC, r.nBlock*sizeof(short int), sizeof(short int)); //we put a lock to write the recomputed crc value in the CRC file
-                        lseek(fdCRC, r.nBlock*sizeof(short int), SEEK_SET); //move pointer to write 
+                        off_t offset = (r.nBlock -1)*sizeof(short int); 
+                        unsigned short int crcValue = crcSlow( (unsigned char*)buff, nBytesRead); 
+                        printf("crc value generated %d\n", crcValue); 
+                        file_lock_write(fdCRC, offset, sizeof(short int)); //we put a lock to write the recomputed crc value in the CRC file
+                        lseek(fdCRC,offset, SEEK_SET); //move pointer to write 
                         write(fdCRC, &crcValue, sizeof(short int)); 
-                        file_unlock(fdCRC, r.nBlock*sizeof(short int), sizeof(short int)); 
+                        file_unlock(fdCRC, offset, sizeof(short int)); 
                     }
                     /* Recompute the CRC, use lseek to get the correct datablock,
                     and store it in the correct position of the CRC file. Remember to use approppriate locks! */
@@ -74,15 +78,21 @@ int main(int argc, char * argv[]) {
                     Result res; 
                     res.nBlock = r.nBlock;
                     // Read the CRC from the CRC file, using lseek + read. Remember to use the correct locks!
-                    file_lock_read(fdCRC, r.nBlock*sizeof(short int), sizeof(short int)); 
-                    lseek(fdCRC, r.nBlock*sizeof(short int), SEEK_SET); 
+                    off_t offset = (r.nBlock -1)*sizeof(short int); 
+                    printf("offset %lld \n", offset); 
+                    int flr = file_lock_read(fdCRC, offset, sizeof(short int)); 
+                    printf("file lock read %d\n", flr); 
+                    lseek(fdCRC, offset, SEEK_SET); 
                     int nBytesReadCRC = read(fdCRC, &res.crc, sizeof(short int)); 
-                    file_unlock(fdCRC, r.nBlock*sizeof(short int), sizeof(short int)); 
+                    printf("crc %d\n", res.crc); 
+                    printf("bytes read %d\n", nBytesReadCRC); 
+                    int fu = file_unlock(fdCRC, offset, sizeof(short int)); 
+                    printf("file unlock %d\n", fu); 
+                    
+                    //Write the result in pipeB!
                     if(nBytesReadCRC > 0){
                         write(pipeB[1], &res, sizeof(Result)); 
                     }
-
-                    //Write the result in pipeB!
                 }
             }
             close(pipeA[0]); //close read pipe A 
