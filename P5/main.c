@@ -62,7 +62,6 @@ int main(int argc, char * argv[]) {
                     if(nBytesRead > 0){
                         off_t offset = (r.nBlock -1)*sizeof(short int); 
                         unsigned short int crcValue = crcSlow( (unsigned char*)buff, nBytesRead); 
-                        printf("crc value generated %d\n", crcValue); 
                         file_lock_write(fdCRC, offset, sizeof(short int)); //we put a lock to write the recomputed crc value in the CRC file
                         lseek(fdCRC,offset, SEEK_SET); //move pointer to write 
                         write(fdCRC, &crcValue, sizeof(short int)); 
@@ -79,15 +78,10 @@ int main(int argc, char * argv[]) {
                     res.nBlock = r.nBlock;
                     // Read the CRC from the CRC file, using lseek + read. Remember to use the correct locks!
                     off_t offset = (r.nBlock -1)*sizeof(short int); 
-                    printf("offset %lld \n", offset); 
-                    int flr = file_lock_read(fdCRC, offset, sizeof(short int)); 
-                    printf("file lock read %d\n", flr); 
+                    file_lock_read(fdCRC, offset, sizeof(short int)); 
                     lseek(fdCRC, offset, SEEK_SET); 
                     int nBytesReadCRC = read(fdCRC, &res.crc, sizeof(short int)); 
-                    printf("crc %d\n", res.crc); 
-                    printf("bytes read %d\n", nBytesReadCRC); 
-                    int fu = file_unlock(fdCRC, offset, sizeof(short int)); 
-                    printf("file unlock %d\n", fu); 
+                    file_unlock(fdCRC, offset, sizeof(short int)); 
                     
                     //Write the result in pipeB!
                     if(nBytesReadCRC > 0){
