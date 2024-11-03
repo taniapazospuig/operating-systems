@@ -2,7 +2,7 @@
 #include "myutils.h"
 #include <string.h>
 
-// since myutils.h already includes pthread.h we do not include them again
+// Since myutils.h already includes pthread.h we do not include them again
 
 void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
     // Complete the initialisation
@@ -25,15 +25,15 @@ void  initialiseFdProvider(FileManager * fm, int argc, char **argv) {
         char path[100];
         strcpy(path, argv[i + 1]);
         strcat(path, ".crc");
-        fm->fdData[i] = open(argv[i+1], O_RDONLY); // storing file descriptor of data file to struct
-        fm->fdCRC[i] = open(path, O_RDONLY); // storing file descriptor of crc file to struct
+        fm->fdData[i] = open(argv[i+1], O_RDONLY); // Storing file descriptor of data file to struct
+        fm->fdCRC[i] = open(path, O_RDONLY); // Storing file descriptor of crc file to struct
         fm->filenames[i] = argv[i+1]; 
-        fm->fileFinished[i] = 0; // file not completely read
-        fm->fileAvailable[i] = 1; // file is available
+        fm->fileFinished[i] = 0; // File not completely read
+        fm->fileAvailable[i] = 1; // File is available
     }
 }
 
-void destroyFdProvider(FileManager * fm) { // frees all alocated memory and closes open files
+void destroyFdProvider(FileManager * fm) { // Free all alocated memory and close open files
     int i;
     for (i = 0; i < fm->nFilesTotal; i++) {
         close(fm->fdData[i]);
@@ -67,18 +67,18 @@ int getAndReserveFile(FileManager *fm, dataEntry * d) {
         pthread_mutex_unlock(&lock); 
     }
 
-    return 1; // if no file available, return 1
+    return 1; // If no file available, return 1
 }
 
-void unreserveFile(FileManager *fm,dataEntry * d) { // call when thread finishes reading the block in the specified file
+void unreserveFile(FileManager *fm,dataEntry * d) { // Call when thread finishes reading the block in the specified file
     fm->fileAvailable[d->index] = 1; 
 }
 
-void markFileAsFinished(FileManager * fm, dataEntry * d) { // call when file completely read 
-    pthread_mutex_lock(&lock); // we put a lock to avoid several threads uptading files remaining
+void markFileAsFinished(FileManager * fm, dataEntry * d) { // Call when file completely read 
+    pthread_mutex_lock(&lock); // We put a lock to avoid several threads uptading files remaining
 
     fm->fileFinished[d->index] = 1;
-    fm->nFilesRemaining--; // mark that a file has finished
+    fm->nFilesRemaining--; // Mark that a file has finished
 
     if (fm->nFilesRemaining == 0) {
         printf("All files have been processed\n");
@@ -86,5 +86,5 @@ void markFileAsFinished(FileManager * fm, dataEntry * d) { // call when file com
     }
 
     pthread_mutex_unlock(&lock); 
-    // this lock and unlock signals to all the possible waiting threads that all files are finished
+    // This lock and unlock signals to all the possible waiting threads that all files are finished
 }
