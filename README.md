@@ -1,12 +1,6 @@
 ## Operating Systems - Universitat Pompeu Fabra
 
-This repository contains my group deliverables for the **Operating Systems** course, a second-year subject in the Bachelor's degree on *Mathematical Engineering on Data Science* at Universitat Pompeu Fabra, Barcelona. The deliverables in this repository correspond to the **2024 edition** of the course.
-
-### About the Course
-
-- **Theory Instructor**: Gabriel Bernardino  
-- **Lab Instructor**: Shatha Alkhasawneh  
-- **Institution**: Universitat Pompeu Fabra, Barcelona  
+This repository contains my group deliverables for the **Operating Systems** course, a second-year subject in the Bachelor's degree on *Mathematical Engineering on Data Science* at Universitat Pompeu Fabra, Barcelona. The deliverables in this repository correspond to the **2024 edition** of the course. 
 
 ### Project Details
 
